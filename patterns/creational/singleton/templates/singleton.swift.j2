@@ -1,0 +1,74 @@
+{# singleton.swift.j2 #}
+{% set class_name = features.get("Class Name", "Singleton") %}
+import Foundation
+{% if features.get("Thread Safety") %}
+import Dispatch
+{% endif %}
+
+class {{ class_name }} {
+    {% if features.get("Initialization") == "Eager" %}
+    static let shared = {{ class_name }}()
+    {% elif features.get("Initialization") == "Lazy" %}
+    {% if features.get("Thread Safety") %}
+    private static var _instance: {{ class_name }}?
+    private static let queue = DispatchQueue(label: "{{ class_name.lower() }}.queue")
+    {% else %}
+    private static var _instance: {{ class_name }}?
+    {% endif %}
+    {% endif %}
+    
+    private init() {
+        // Private initializer to prevent external instantiation
+    }
+    
+    {% if features.get("Access Method") == "getInstance()" %}
+    {% if features.get("Initialization") == "Eager" %}
+    static func getInstance() -> {{ class_name }} {
+        return shared
+    }
+    {% elif features.get("Initialization") == "Lazy" %}
+    {% if features.get("Thread Safety") %}
+    static func getInstance() -> {{ class_name }} {
+        return queue.sync {
+            if _instance == nil {
+                _instance = {{ class_name }}()
+            }
+            return _instance!
+        }
+    }
+    {% else %}
+    static func getInstance() -> {{ class_name }} {
+        if _instance == nil {
+            _instance = {{ class_name }}()
+        }
+        return _instance!
+    }
+    {% endif %}
+    {% endif %}
+    {% elif features.get("Access Method") == "Static Field" %}
+    {% if features.get("Initialization") == "Eager" %}
+    // Direct access through static property
+    static var instance: {{ class_name }} {
+        return shared
+    }
+    {% elif features.get("Initialization") == "Lazy" %}
+    {% if features.get("Thread Safety") %}
+    static var instance: {{ class_name }} {
+        return queue.sync {
+            if _instance == nil {
+                _instance = {{ class_name }}()
+            }
+            return _instance!
+        }
+    }
+    {% else %}
+    static var instance: {{ class_name }} {
+        if _instance == nil {
+            _instance = {{ class_name }}()
+        }
+        return _instance!
+    }
+    {% endif %}
+    {% endif %}
+    {% endif %}
+}

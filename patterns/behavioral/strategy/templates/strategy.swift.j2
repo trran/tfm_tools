@@ -1,0 +1,127 @@
+{% set context_name = features.get("Context Class Name", "Context") %}
+{% set strategy_name = features.get("Strategy Interface Name", "Strategy") %}
+{% set num_strategies = features.get("Number of Strategies", 2) %}
+import Foundation
+
+// Strategy Protocol
+{% if features.get("Strategy Interface") == "Protocol" %}
+protocol {{ strategy_name }} {
+    func execute()
+}
+{% else %}
+// Using class-based approach
+class {{ strategy_name }} {
+    {% if features.get("Context Behavior") == "Template Method" %}
+    final func execute() {
+        beforeExecute()
+        doExecute()
+        afterExecute()
+    }
+    
+    func beforeExecute() {}
+    func doExecute() {
+        fatalError("Must be overridden")
+    }
+    func afterExecute() {}
+    {% else %}
+    func execute() {
+        fatalError("Must be overridden")
+    }
+    {% endif %}
+}
+{% endif %}
+
+// Concrete Strategies
+{% for i in range(1, num_strategies + 1) %}
+class ConcreteStrategy{{ i }}: {{ strategy_name }} {
+    {% if features.get("Strategy Interface") == "Protocol" %}
+    func execute() {
+        print("Executing strategy {{ i }}")
+    }
+    {% elif features.get("Context Behavior") == "Template Method" %}
+    override func doExecute() {
+        print("Executing strategy {{ i }}")
+    }
+    {% else %}
+    override func execute() {
+        print("Executing strategy {{ i }}")
+    }
+    {% endif %}
+}
+{% endfor %}
+
+// Context Class
+class {{ context_name }} {
+    private var strategy: {{ strategy_name }}{% if not features.get("Strategy Selection") == "Constructor Injection" and not features.get("Default Strategy") %}?{% endif %}
+    {% if features.get("Strategy Caching") %}
+    private var strategyCache: [String: {{ strategy_name }}] = [:]
+    {% endif %}
+    
+    {% if features.get("Strategy Selection") == "Constructor Injection" %}
+    init(strategy: {{ strategy_name }}) {
+        {% if features.get("Strategy Validation") %}
+        // Strategy validation would be handled by Swift's type system
+        {% endif %}
+        self.strategy = strategy
+    }
+    {% else %}
+    init() {
+        {% if features.get("Default Strategy") %}
+        self.strategy = ConcreteStrategy1()
+        {% endif %}
+    }
+    {% endif %}
+    
+    {% if features.get("Strategy Selection") == "Setter Method" or features.get("Strategy Selection") == "Factory Method" %}
+    func setStrategy(_ strategy: {{ strategy_name }}) {
+        self.strategy = strategy
+    }
+    {% endif %}
+    
+    {% if features.get("Strategy Selection") == "Factory Method" %}
+    func setStrategy(byType strategyType: String) {
+        {% if features.get("Strategy Caching") %}
+        if let cachedStrategy = strategyCache[strategyType] {
+            self.strategy = cachedStrategy
+            return
+        }
+        {% endif %}
+        
+        let newStrategy: {{ strategy_name }}
+        switch strategyType.lowercased() {
+        {% for i in range(1, num_strategies + 1) %}
+        case "strategy{{ i }}":
+            newStrategy = ConcreteStrategy{{ i }}()
+        {% endfor %}
+        default:
+            {% if features.get("Default Strategy") %}
+            newStrategy = ConcreteStrategy1()
+            {% else %}
+            fatalError("Unknown strategy type: \(strategyType)")
+            {% endif %}
+        }
+        
+        self.strategy = newStrategy
+        {% if features.get("Strategy Caching") %}
+        strategyCache[strategyType] = newStrategy
+        {% endif %}
+    }
+    {% endif %}
+    
+    func executeStrategy() {
+        {% if features.get("Strategy Validation") and not features.get("Strategy Selection") == "Constructor Injection" and not features.get("Default Strategy") %}
+        guard let strategy = strategy else {
+            {% if features.get("Default Strategy") %}
+            self.strategy = ConcreteStrategy1()
+            self.strategy{% if not features.get("Default Strategy") %}?{% endif %}.execute()
+            return
+            {% else %}
+            fatalError("No strategy set")
+            {% endif %}
+        }
+        strategy.execute()
+        {% else %}
+        strategy{% if not features.get("Strategy Selection") == "Constructor Injection" and not features.get("Default Strategy") %}?{% endif %}.execute()
+        {% endif %}
+    }
+}

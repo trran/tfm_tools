@@ -1,0 +1,130 @@
+{% set context_name = features.get("Context Class Name", "Context") %}
+{% set strategy_name = features.get("Strategy Interface Name", "Strategy") %}
+{% set num_strategies = features.get("Number of Strategies", 2) %}
+using System;
+{% if features.get("Strategy Caching") %}
+using System.Collections.Generic;
+{% endif %}
+
+// Strategy Interface
+{% if features.get("Strategy Interface") == "Abstract Class" %}
+public abstract class {{ strategy_name }}
+{
+    {% if features.get("Context Behavior") == "Template Method" %}
+    public void Execute()
+    {
+        BeforeExecute();
+        DoExecute();
+        AfterExecute();
+    }
+    
+    protected virtual void BeforeExecute() { }
+    protected abstract void DoExecute();
+    protected virtual void AfterExecute() { }
+    {% else %}
+    public abstract void Execute();
+    {% endif %}
+}
+{% else %}
+public interface I{{ strategy_name }}
+{
+    void Execute();
+}
+{% endif %}
+
+// Concrete Strategies
+{% for i in range(1, num_strategies + 1) %}
+public class ConcreteStrategy{{ i }} : {% if features.get("Strategy Interface") == "Abstract Class" %}{{ strategy_name }}{% else %}I{{ strategy_name }}{% endif %}
+{
+    {% if features.get("Strategy Interface") == "Abstract Class" and features.get("Context Behavior") == "Template Method" %}
+    protected override void DoExecute()
+    {
+        Console.WriteLine("Executing strategy {{ i }}");
+    }
+    {% else %}
+    public {% if features.get("Strategy Interface") == "Abstract Class" %}override{% else %}{% endif %}void Execute()
+    {
+        Console.WriteLine("Executing strategy {{ i }}");
+    }
+    {% endif %}
+}
+{% endfor %}
+
+// Context Class
+public class {{ context_name }}
+{
+    private {% if features.get("Strategy Interface") == "Abstract Class" %}{{ strategy_name }}{% else %}I{{ strategy_name }}{% endif %} strategy;
+    {% if features.get("Strategy Caching") %}
+    private Dictionary<string, {% if features.get("Strategy Interface") == "Abstract Class" %}{{ strategy_name }}{% else %}I{{ strategy_name }}{% endif %}> strategyCache = new Dictionary<string, {% if features.get("Strategy Interface") == "Abstract Class" %}{{ strategy_name }}{% else %}I{{ strategy_name }}{% endif %}>();
+    {% endif %}
+    
+    {% if features.get("Strategy Selection") == "Constructor Injection" %}
+    public {{ context_name }}({% if features.get("Strategy Interface") == "Abstract Class" %}{{ strategy_name }}{% else %}I{{ strategy_name }}{% endif %} strategy)
+    {
+        {% if features.get("Strategy Validation") %}
+        this.strategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
+        {% else %}
+        this.strategy = strategy;
+        {% endif %}
+    }
+    {% else %}
+    public {{ context_name }}()
+    {
+        {% if features.get("Default Strategy") %}
+        this.strategy = new ConcreteStrategy1();
+        {% endif %}
+    }
+    {% endif %}
+    
+    {% if features.get("Strategy Selection") == "Setter Method" or features.get("Strategy Selection") == "Factory Method" %}
+    public void SetStrategy({% if features.get("Strategy Interface") == "Abstract Class" %}{{ strategy_name }}{% else %}I{{ strategy_name }}{% endif %} strategy)
+    {
+        {% if features.get("Strategy Validation") %}
+        this.strategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
+        {% else %}
+        this.strategy = strategy;
+        {% endif %}
+    }
+    {% endif %}
+    
+    {% if features.get("Strategy Selection") == "Factory Method" %}
+    public void SetStrategy(string strategyType)
+    {
+        {% if features.get("Strategy Caching") %}
+        if (strategyCache.ContainsKey(strategyType))
+        {
+            this.strategy = strategyCache[strategyType];
+            return;
+        }
+        {% endif %}
+        
+        {% if features.get("Strategy Interface") == "Abstract Class" %}{{ strategy_name }}{% else %}I{{ strategy_name }}{% endif %} newStrategy = strategyType.ToLower() switch
+        {
+            {% for i in range(1, num_strategies + 1) %}
+            "strategy{{ i }}" => new ConcreteStrategy{{ i }}(),
+            {% endfor %}
+            _ => {% if features.get("Default Strategy") %}new ConcreteStrategy1(){% else %}throw new ArgumentException($"Unknown strategy type: {strategyType}"){% endif %}
+        };
+        
+        this.strategy = newStrategy;
+        {% if features.get("Strategy Caching") %}
+        strategyCache[strategyType] = newStrategy;
+        {% endif %}
+    }
+    {% endif %}
+    
+    public void ExecuteStrategy()
+    {
+        {% if features.get("Strategy Validation") %}
+        if (strategy == null)
+        {
+            {% if features.get("Default Strategy") %}
+            strategy = new ConcreteStrategy1();
+            {% else %}
+            throw new InvalidOperationException("No strategy set");
+            {% endif %}
+        }
+        {% endif %}
+        strategy.Execute();
+    }
+}

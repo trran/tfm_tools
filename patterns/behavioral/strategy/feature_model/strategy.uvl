@@ -1,0 +1,31 @@
+features
+    "Strategy Pattern" {abstract}
+        mandatory
+            "Strategy Interface" {abstract}
+                alternative
+                    "Abstract Class"
+                    "Interface" {Flexibility 3}
+                    "Protocol" {Flexibility 3}
+            "Strategy Selection" {abstract}
+                alternative
+                    "Constructor Injection" {Flexibility 2}
+                    "Setter Method" {Flexibility 3}
+                    "Factory Method" {Complexity 2}
+            "Context Behavior" {abstract}
+                alternative
+                    "Delegate to Strategy"
+                    "Template Method" {Complexity 2}
+        optional
+            "Strategy Validation" {Security 2}
+            "Default Strategy" {Usability 2}
+            "Strategy Caching" {Performance 2}
+            String "Context Class Name"
+            String "Strategy Interface Name"
+            Integer "Number of Strategies" cardinality [2..10]
+
+constraints
+    "Abstract Class" => !"Protocol"
+    "Protocol" => "Interface"
+    "Factory Method" => "Strategy Validation"
+    "Template Method" => "Abstract Class"
+    "Number of Strategies" > 1

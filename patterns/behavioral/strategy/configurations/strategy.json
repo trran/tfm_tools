@@ -1,0 +1,14 @@
+{
+  "ContextName": true,
+  "Context": true,
+  "StrategyInterface": true,
+  "ConcreteStrategy": true,
+  "StrategyInterfaceName": true,
+  "StrategyMethod": true,
+  "StrategyMethodName": true,
+  "StrategyMethodParameters": true,
+  "StrategyMethodParameterName": true,
+  "StrategyMethodParameterType": true,
+  "StrategyMethodReturnType": true,
+  "ConcreteStrategyName": true
+}

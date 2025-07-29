@@ -1,0 +1,18 @@
+features
+    "Singleton Pattern" {abstract}
+        mandatory
+            "Initialization" {abstract}
+                alternative
+                    "Eager" {Performance 3}
+                    "Lazy" {Performance 2}
+            "Access Method" {abstract}
+                alternative
+                    "getInstance()"
+                    "Static Field"
+        optional
+            "Thread Safety" {Performance 1}
+            String "Class Name"
+
+constraints
+    "Eager" => !"Thread Safety"
+    "Static Field" => "Eager"

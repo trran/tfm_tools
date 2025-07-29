@@ -1,0 +1,10 @@
+{
+  "Eager": false,
+  "Lazy": true,
+  "Initialization": true,
+  "Access Method": true,
+  "Thread Safety": true,
+  "Class Name": "singleton",
+  "getInstance()": true,
+  "Static Field": false
+}
